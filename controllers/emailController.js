@@ -4,6 +4,7 @@ const nodemailer = require("nodemailer");
 dotenv.config();
 
 let transporter = nodemailer.createTransport({
+  service:"gmail",
   host: process.env.SMTP_HOST,
   port: process.env.SMTP_PORT,
   loggger: true,
@@ -21,22 +22,27 @@ let transporter = nodemailer.createTransport({
 
 const sendEmail = expressAsyncHandler(async (req, res) => {
   const { email, name, message } = req.body;
-  console.log(email, name, message);
 
   var mailOptions = {
-    from: email,
+    from: `"${name}" <${process.env.SMTP_MAIL}>`, 
     to: process.env.SMTP_MAIL,
-    subject: name,
-    text: message,
+    replyTo: email, 
+    subject: "Message from " + name,
+    text: `Message from ${name} (${email}):\n\n${message}`,
   };
+  
 
-  transporter.sendMail(mailOptions, function (error, info) {
-    if (error) {
-      console.log(error);
-    } else {
-      console.log("Email sent successfully!");
-    }
-  });
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log("Email sent successfully:", info.response);
+    res.status(200).json({ success: true, message: "Email sent successfully!" });
+  } catch (error) {
+    console.error("Error sending email:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message || "Failed to send email",
+    });
+  }
 });
 
 module.exports = { sendEmail };
