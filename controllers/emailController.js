@@ -7,10 +7,6 @@ let transporter = nodemailer.createTransport({
   service: "gmail",
   host: process?.env?.SMTP_HOST,
   port: process?.env?.SMTP_PORT,
-  logger: true,
-  debug: true,
-  secureConnection: false,
-  secure: false,
   auth: {
     user: process?.env?.SMTP_MAIL,
     pass: process?.env?.SMTP_PASSWORD,
@@ -18,6 +14,19 @@ let transporter = nodemailer.createTransport({
   tls: {
     rejectUnauthorized: true,
   },
+  pool: true, 
+  maxConnections: 5, 
+  maxMessages: 10, 
+  connectionTimeout: 20000, 
+  greetingTimeout: 10000, 
+});
+
+transporter.verify((error, success) => {
+  if (error) {
+    console.error("SMTP Connection Failed:", error);
+  } else {
+    console.log("SMTP Connection Established");
+  }
 });
 
 const validateEmail = (email) => {
@@ -35,12 +44,12 @@ const sendEmail = expressAsyncHandler(async (req, res) => {
     });
   }
 
-  var mailOptions = {
-    from: email, 
-    to: process.env.SMTP_MAIL, 
-    replyTo: email, 
+  const mailOptions = {
+    from: email,
+    to: process.env.SMTP_MAIL,
+    replyTo: email,
     subject: "Message from " + name,
-    text: `You have received a message from ${name} (${email}):\n\n${message}`, 
+    text: `You have received a message from ${name} (${email}):\n\n${message}`,
     html: `
       <div style="font-family: Arial, sans-serif; line-height: 1.6;">
         <h2 style="color: #333;">New Message Received</h2>
@@ -50,7 +59,7 @@ const sendEmail = expressAsyncHandler(async (req, res) => {
           <p>${message}</p>
         </div>
       </div>
-    `, 
+    `,
   };
 
   try {
